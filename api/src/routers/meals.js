@@ -3,8 +3,8 @@ import knex from "../database_client.js";
 
 const router = express.Router();
 
-// ✅ POST /api/meals
 
+//Adds a new meal to the database
 router.post("/", async (req, res) => {
   try {
     const newMeal = {
@@ -49,10 +49,11 @@ router.get("/past-meals", async (req, res) => {
   }
 });
 
+//Returns all meals
 router.get("/all-meals", async (req, res) => {
 
   try {
-    const allMeals =  await knex("meal").select("*").orderBy("id", "asc");
+    const allMeals =  await knex("meal").select("*");
     res.json(allMeals);
   } catch (error) {
     console.log("Error fetching all meals:",error);
@@ -83,6 +84,45 @@ router.get("/last-meal", async (req, res) => {
   }
 });
 
+//Returns the meal by id
+router.get("/findById/:id", async (req, res) => {
+  const thisID = Number(req.params.id);
+  try {
+    const findByID =  await knex("meal").select("*").where("id", thisID);
+    res.json(findByID);            // localhost:3001/api/meals/findById/<thisID>
+  } catch (error) {
+    console.log("Error fetching last meal:",error);
+    res.status(500).json({ error: "Failed to fetch last meal" });
+  }
+});
+
+//Updates the meal by id
+router.put("/updates/:id", async (req, res) => {
+  const thisID = Number(req.params.id);
+  const dataToUpdate = req.body;
+  try {
+    await knex("meal").select("*").where("id", thisID).update(dataToUpdate);
+    res.send("Your data has been updated!");
+
+  } catch (error) {
+    res.status(500).json({ error: "Database error", details: error.message });
+  }
+});
+
+
+//Deletes the meal by id
+router.delete("/deletes/:id", async (req, res) => {
+  const thisID = Number(req.params.id);
+  try {
+    const deletedCount = await knex('meal').where({ id: thisID }).del();
+    if (deletedCount === 0) {
+      return res.status(404).json({ error: 'Meal not found' });
+    }
+    res.send("The meal has been deleted successfully!");
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete meal", details: error.message });
+  }
+});
 
 
 export default router;
