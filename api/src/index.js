@@ -4,28 +4,53 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import knex from "./database_client.js";
 import nestedRouter from "./routers/nested.js";
+import mealsRouter from "./routers/meals.js";
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
 const apiRouter = express.Router();
+apiRouter.use("/meals", mealsRouter);
 
-// You can delete this route once you add your own routes
 apiRouter.get("/", async (req, res) => {
-  const SHOW_TABLES_QUERY =
-    process.env.DB_CLIENT === "pg"
-      ? "SELECT * FROM pg_catalog.pg_tables;"
-      : "SHOW TABLES;";
-  const tables = await knex.raw(SHOW_TABLES_QUERY);
-  res.json({ tables });
+  const dbClient = process.env.DB_CLIENT;
+  let query;
+
+  if (dbClient === "pg") {
+    query =
+      "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';";
+  } else if (dbClient === "mysql" || dbClient === "mysql2") {
+    query = "SHOW TABLES;";
+  } else if (dbClient === "sqlite3") {
+    query = "SELECT name FROM sqlite_master WHERE type='table';";
+  } else {
+    return res.status(400).json({ error: "Unsupported DB_CLIENT" });
+  }
+
+  try {
+    const result = await knex.raw(query);
+    let tables = [];
+    if (dbClient === "pg") {
+      tables = result.rows.map(row => row.tablename);
+    } else if (dbClient === "sqlite3") {
+      tables = result.map(row => row.name);
+    } else if (dbClient === "mysql" || dbClient === "mysql2") {
+      tables = result[0].map(row => Object.values(row)[0]);
+    }
+
+    res.json(tables);
+  } catch (error) {
+    console.error("❌ Error fetching tables:", error);
+    res.status(500).json({ error: "Failed to fetch table list" });
+  }
 });
 
-// This nested router example can also be replaced with your own sub-router
+
 apiRouter.use("/nested", nestedRouter);
 
 app.use("/api", apiRouter);
 
 app.listen(process.env.PORT, () => {
-  console.log(`API listening on port ${process.env.PORT}`);
-});
+  console.log(`✅ API listening on port ${process.env.PORT}`);
+}); 
