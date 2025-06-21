@@ -127,44 +127,37 @@ router.delete("/deletes/:id", async (req, res) => {
 
 // Homework week3
 router.get("/", async (req, res) => {
+  const query = req.query;
+  const queryKey = Object.keys(query);
 
-  const q =  Object.keys(req.query)[0];
-  const q2 = Object.keys(req.query)[1];
-  const value = req.query[q];
-  const value2 = req.query[q2];
+  let result = knex("meal").select("meal.*");
 
   //Returns all meals that are cheaper than maxPrice.	
-  if(q == "maxPrice" && !isNaN(Number(value)) && value){
+  if(queryKey.includes("maxPrice") && !isNaN(Number(query.maxPrice)) && query.maxPrice){
     try {
-      const result =  await knex("meal").select("*").where("price", "<", value);
-      res.json(result);
+      result =  result.where("price", "<", query.maxPrice);
     } catch (error) {
       res.status(500).json({ error: "Failed to do this query!", details: error.message });
     }
   }
 
   //availableReservations	
-  if(q == "availableReservations"){
+  if(queryKey.includes("availableReservations")){
 
     try {
-      if (value === "true") {                           
-        const result = await knex("meal")
+      if (query.availableReservations === "true") {                           
+        result = result
         .leftJoin("reservation", "meal.id", "reservation.meal_id")
         .groupBy("meal.id")
-        .select("meal.*")
         .count("reservation.id as reservationsCount")
         .having("reservationsCount", ">", 0);
 
-        res.json(result);
-      }else if(value === "false") {
-        const result = await knex("meal")
+      }else if(query.availableReservations === "false") {
+        result = result
         .leftJoin("reservation", "meal.id", "reservation.meal_id")
         .groupBy("meal.id")
-        .select("meal.*")
         .count("reservation.id as reservationsCount")
         .having("reservationsCount", "=", 0);
-
-        res.json(result);
       }else{
         res.send("The value must be either 'true' or 'false'");
       }
@@ -174,12 +167,10 @@ router.get("/", async (req, res) => {
   }
 
   //title
-  if(q == "title"){
+  if(queryKey.includes("title")){
     try {
-      const result =  await knex("meal").select("*").where("title", "LIKE", `%${value}%`);
-      if(result.length > 0){
-        res.json(result);
-      }else{
+      result =  result.where("title", "LIKE", `%${query.title}%`);
+      if(!query.title){
         res.send("No meals found matching this title!")
       }
     } catch (error) {
@@ -188,12 +179,10 @@ router.get("/", async (req, res) => {
   }
 
   //Returns all meals where the date for when is after the given date.
-  if (q === "dateAfter") {
+  if (queryKey.includes("dateAfter")) {
     try {
-      const result = await knex("meal").select("*").where("when", ">", value);
-      if (result.length > 0) {
-        res.json(result);
-      } else {
+      result = result.where("when", ">", query.dateAfter);
+      if (!query.dateAfter){
         res.send("No meals found after this date.");
       }
     } catch (error) {
@@ -202,12 +191,10 @@ router.get("/", async (req, res) => {
   }
 
   //Returns all meals where the date for when is before the given date.
-  if (q === "dateBefore") {
+  if (queryKey.includes("dateBefore")) {
     try {
-      const result = await knex("meal").select("*").where("when", "<", value);
-      if (result.length > 0) {
-        res.json(result);
-      } else {
+      result = result.where("when", "<", query.dateBefore);
+      if (!query.dateBefore){
         res.send("No meals found before this date.");
       }
     } catch (error) {
@@ -216,11 +203,10 @@ router.get("/", async (req, res) => {
   }
 
   //Returns the given number of meals.	
-  if(q == "limit"){
+  if(queryKey.includes("limit")){
     try {
-      if(Number(value) > 0){
-        const result = await knex("meal").select("*").limit(Number(value));
-        res.json(result);
+      if(Number(query.limit) > 0){
+        result = result.limit(Number(query.limit));
       }else {
         res.send("Inter the number of limit correctly!");
       }
@@ -230,28 +216,33 @@ router.get("/", async (req, res) => {
   } 
 
   //Returns all meals sorted in the given direction. Only works combined with the sortKey and allows asc or desc.	
-  if(q == "sortKey" && q2 == "sortDir"){
+  if(queryKey.includes("sortKey") && queryKey.includes("sortDir")){
     try {
-      if(value == "price" || value == "when" || value == "max_reservations"){
-      const result = await knex("meal").select("*").orderBy(value, value2);
-      res.json(result);
+      if(query.sortKey == "price" || query.sortKey == "when" || query.sortKey == "max_reservations"){
+      result = result.orderBy(query.sortKey, query.sortDir);
       }else{
       res.send("You can not sort this column!")
       } 
     } catch (error) {
       res.status(500).json({ error: "Query failed", details: error.message });
     }
-  }else  if(q == "sortKey"){          //Returns all meals sorted by the given key. Allows when, max_reservations and price as keys
+  }else  if(queryKey.includes("sortKey")){          //Returns all meals sorted by the given key. Allows when, max_reservations and price as keys
     try {
-      if(value == "price" || value == "when" || value == "max_reservations"){
-      const result = await knex("meal").select("*").orderBy(value, "asc");
-      res.json(result);
+      if(query.sortKey == "price" || query.sortKey == "when" || query.sortKey == "max_reservations"){
+      result = result.orderBy(query.sortKey, "asc");
       }else{
       res.send("You can not sort this column!")
       } 
     } catch (error) {
       res.status(500).json({ error: "Query failed", details: error.message });
     }
+  }
+
+  try {
+    const data = await result;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to execute final query", details: error.message });
   }
 
 });
