@@ -76,6 +76,7 @@ router.put("/updates/:id", async (req, res) => {
 });
 
 
+
 //Deletes the reservation by id
 router.delete("/deletes/:id", async (req, res) => {
   const thisID = Number(req.params.id);
