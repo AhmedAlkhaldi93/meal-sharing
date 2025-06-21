@@ -16,8 +16,19 @@ router.post("/", async (req, res) => {
     contact_email: req.body.contact_email,
     created_date: new Date()
     };
-    await knex("reservation").insert(newRes);
-    res.status(201).send("It has been done!");
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if(
+      typeof(newRes.number_of_guests) == "number" && 
+      newRes.contact_phonenumber && typeof(newRes.contact_phonenumber) == "string"
+      && newRes.contact_name && typeof(newRes.contact_name) == "string" 
+      && newRes.contact_email && regex.test(newRes.contact_email)
+    ){
+      await knex("reservation").insert(newRes);
+      res.status(201).send("A new reservation has been added.");
+    } else{
+      return res.status(400).json({ error: "Invalid or missing reservation fields" });
+    }
   } catch (error) {
     console.error("Error inserting meal:", error);
     res.send({ error: "Failed to create meal" });
