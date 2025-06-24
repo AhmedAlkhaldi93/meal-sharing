@@ -51,7 +51,7 @@ router.get("/all-reservations", async (req, res) => {
 
 
 //Returns a reservation by id
-router.get("/findById/:id", async (req, res) => {
+router.get("/:id", async (req, res) => {
   const thisID = Number(req.params.id);
   try {
     const findByID =  await knex("reservation").select("*").where("id", thisID);
@@ -63,7 +63,7 @@ router.get("/findById/:id", async (req, res) => {
 });
 
 //Updates the reservation by id
-router.put("/updates/:id", async (req, res) => {
+router.put("/:id", async (req, res) => {
   const thisID = Number(req.params.id);
   const dataToUpdate = req.body;
   try {
@@ -78,7 +78,7 @@ router.put("/updates/:id", async (req, res) => {
 
 
 //Deletes the reservation by id
-router.delete("/deletes/:id", async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const thisID = Number(req.params.id);
   try {
     const deletedCount = await knex('reservation').where({ id: thisID }).del();

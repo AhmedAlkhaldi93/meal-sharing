@@ -85,7 +85,7 @@ router.get("/last-meal", async (req, res) => {
 });
 
 //Returns the meal by id
-router.get("/findById/:id", async (req, res) => {
+router.get("/:id", async (req, res) => {
   const thisID = Number(req.params.id);
   try {
     const findByID =  await knex("meal").select("*").where("id", thisID);
@@ -97,7 +97,7 @@ router.get("/findById/:id", async (req, res) => {
 });
 
 //Updates the meal by id
-router.put("/updates/:id", async (req, res) => {
+router.put("/:id", async (req, res) => {
   const thisID = Number(req.params.id);
   const dataToUpdate = req.body;
   try {
@@ -111,7 +111,7 @@ router.put("/updates/:id", async (req, res) => {
 
 
 //Deletes the meal by id
-router.delete("/deletes/:id", async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const thisID = Number(req.params.id);
   try {
     const deletedCount = await knex('meal').where({ id: thisID }).del();
